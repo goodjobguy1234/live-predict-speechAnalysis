@@ -28,6 +28,19 @@ def slide_window(waveform, pad_amount):
       begin += shift
   return result
 
+def slide_window_for_live(waveform, pad_amount, beginTime = 0):
+  result = []
+  for window in pad_amount:
+    shift = window//2
+    splitted_data = tf.signal.frame(waveform, window, shift, pad_end= True, pad_value=0)
+    begin = beginTime
+    splitted_data*=np.hamming(window)
+    for data in splitted_data:
+      result.append([data,begin, begin + window])
+      begin += shift
+      endTime = begin + window
+  return result, endTime
+
 def calculatePadding(sample_rate, sec):
   metric = []
   for i in sec:

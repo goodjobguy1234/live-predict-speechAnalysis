@@ -11,7 +11,7 @@ from subprocess import PIPE, Popen
 
 from os.path import exists as file_exists
 
-prototype_py_file = "live_predict"
+prototype_py_file = "stream_audio.py"
 
 class App(Frame):
     def __init__(self):
@@ -72,7 +72,7 @@ class App(Frame):
 
         self.logs = scrolledtext.ScrolledText(logsFrame,width=40,height=10)
         self.logs.insert(INSERT,f"Using {prototype_py_file}\n")
-        self.logs.insert(INSERT,"Using Webcam\n")
+        # self.logs.insert(INSERT,"Using Webcam\n")
         self.logs.pack(side=BOTTOM, padx=5, pady=5)
         # self.heading.grid(column=1, row=1)
         # self.logs.grid(column=1,row=2)
