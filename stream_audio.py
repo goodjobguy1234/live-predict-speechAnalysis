@@ -29,17 +29,29 @@ energy_model = joblib.load('model\energy_model.pkl')
 rudeword_spot_model = tf.keras.models.load_model('model\model_thai_systhesis0.h5')
 
 queue = Queue()
+rudeQueue = Queue()
+energyQueue = Queue()
 
 wf = wave.open(file_path, 'rb')
 
-window_duration = 3
+window_duration = 0.15
 sr = wf.getframerate()
 current_time = 0
 runninng_time = 0
-chuck_duration = 3
+chuck_duration = 0.15
+
+energy_duration = 3
+rude_duration = 0.25
+
+energy_sample = int(sr * energy_duration)
+rude_sample = int(sr * rude_duration)
 window_samples = int(sr * window_duration)
+
 chuck_sample = int(sr * chuck_duration)
 audio_data = np.zeros(window_samples, dtype="int16").astype(np.float32)
+rude_data = np.zeros(rude_sample, dtype="int16").astype(np.float32)
+energy_data = np.zeros(energy_sample, dtype="int16").astype(np.float32)
+
 begin_time = 0
 
 # instantiate PyAudio (1)
@@ -114,7 +126,7 @@ def plotter(audio_data, sr, energyResult, rudeResult):
     plt.pause(0.01)
 
 def callback(in_data, frame_count, time_info, status):
-    global audio_data, current_time
+    global rude_data, current_time, energy_data, audio_data
     data = wf.readframes(frame_count)
     # print(time_info)
     audio_data0 = np.frombuffer(data, dtype=np.int16).astype(np.float32)
@@ -122,9 +134,20 @@ def callback(in_data, frame_count, time_info, status):
     audio_data0 *= scale
 
     audio_data = np.append(audio_data, audio_data0)
+    rude_data = np.append(rude_data, audio_data0)
+    energy_data = np.append(energy_data, audio_data0)
+
     if len(audio_data) > window_samples:
         audio_data = audio_data[-window_samples :]
         queue.put((audio_data, frame_count))
+   
+    if len(rude_data) > rude_sample:
+        rude_data = rude_data[-rude_sample :]
+        rudeQueue.put((rude_data, frame_count))
+    
+    if len(energy_data) > energy_sample:
+        energy_data = energy_data[-energy_sample :]
+        energyQueue.put((energy_data, frame_count))
 
     return (data, pyaudio.paContinue)
 
@@ -161,16 +184,25 @@ try:
     plt.ion()
     plt.show()
 
-    while stream.is_active:
+    while True:
+        time.sleep(0.1)
+        
+        energyResult = 'Not Detect'
+        rudeResult = []
         queue_data, frame_size = queue.get()
-        _, energyResult = energyExtractor.extract(queue_data, sr)
-        rudewordSpot.preProcess(sr, [0.25], queue_data)
-        isFound, rudeResult = rudewordSpot.predict()
+
+        if not energyQueue.empty():
+            energy_queue_data, _ = energyQueue.get()
+            _, energyResult = energyExtractor.extract(energy_queue_data, sr)
+
+        if not rudeQueue.empty():
+            rude_queue_data, _ = rudeQueue.get()
+            rudewordSpot.preProcess(sr, [0.25], rude_queue_data)
+            isFound, rudeResult = rudewordSpot.predict()
 
         plotter(queue_data, sr, energyResult, rudeResult)
-
-        duration_percent += (frame_size/ float(sr) / duration) * 100, 2
-        print(f'Reading: {duration_percent} /{total_duration_percent}%')
+        duration_percent += (frame_size/ float(sr)) / duration * 100
+        print(f'Reading: {round(duration_percent,2)} /{total_duration_percent}%')
         print(f'energy: {energyResult}')
         print()
         
