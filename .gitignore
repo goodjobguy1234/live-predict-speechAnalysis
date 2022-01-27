@@ -1,3 +1,5 @@
 *.avi
 *.mp4
 *.wav
+venv
+.idea

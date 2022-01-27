@@ -11,13 +11,7 @@ import tensorflow as tf
 import tensorflow_io as tfio
 import matplotlib.pyplot as plt
 import math
-import matplotlib as mpl
-# from matplotlib.figure import Figure
-# from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
-# NavigationToolbar2Tk)
-# import matplotlib.animation as animation
-# from matplotlib import style
-# style.use('ggplot')
+import os
 
 
 sys.path.insert(1, './src/')
@@ -72,7 +66,7 @@ def plotter(audio_data, sr, energyResult, rudeResult):
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     if rudeResult != []:
-        showString = ' '.join(str(value) + '\n' for value in rudeResult)
+        showString = ' '.join(str(value[0]) + '\n' for value in rudeResult)
         ax.set_facecolor("lightgreen")
         ax.text(
             x=0.5,
@@ -104,13 +98,20 @@ def plotter(audio_data, sr, energyResult, rudeResult):
         fontweight="bold",
         transform=ax2.transAxes
     )
-    # plt.plot(time, audio_data)
+    
+    # plt.subplot(3,1,2)
+    # ax3 = plt.gca()
+    #draw ful-lenghth emthy bar
+    # ax3.axhline(y=1600, xmin=0.5, xmax=1,
+    #        linewidth=6, color='#af0b1e', alpha=0.1)
+
+    #draw filled bar
       
     # shows the plot 
     # in new window
     plt.tight_layout()
     plt.draw()
-    plt.pause(0.001)
+    plt.pause(0.01)
 
 def callback(in_data, frame_count, time_info, status):
     global audio_data, current_time
@@ -142,12 +143,15 @@ frames = wf.getnframes()
 rate = wf.getframerate()
 duration = frames/float(rate)
 
+duration_percent = 0
+total_duration_percent = 100
+
 energyExtractor = EnergyExtractor(energy_model)
 rudewordSpot = RudeWordSpot(rudeword_spot_model, sr)
 
 # wait for stream to finish (5)
 try:
-    plt.figure(1)
+    plt.figure()
       
     # title of the plot
     # plt.title("Sound Wave")
@@ -163,12 +167,18 @@ try:
         rudewordSpot.preProcess(sr, [0.25], queue_data)
         isFound, rudeResult = rudewordSpot.predict()
 
-        print('energy')
-        print(energyResult)
-        print('-----------')
-        print("rudeword detection")
-        print("predict_result:", rudeResult)
         plotter(queue_data, sr, energyResult, rudeResult)
+
+        duration_percent += (frame_size/ float(sr) / duration) * 100, 2
+        print(f'Reading: {duration_percent} /{total_duration_percent}%')
+        print(f'energy: {energyResult}')
+        print()
+        
+        print("rudeword detection")
+        print("predict_result (times per  3 sec):", rudeResult)
+        print()
+        print('-----------')
+        print()
 
 except (KeyboardInterrupt, SystemExit):
     # stop stream (6)
