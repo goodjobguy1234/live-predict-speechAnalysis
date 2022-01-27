@@ -169,8 +169,8 @@ try:
 
         plotter(queue_data, sr, energyResult, rudeResult)
 
-        duration_percent += (frame_size/ float(sr) / duration) * 100, 2
-        print(f'Reading: {duration_percent} /{total_duration_percent}%')
+        duration_percent += ((frame_size/ float(sr)) / duration) * 100
+        print(f'Reading: {round(duration_percent, 2)} /{total_duration_percent}%')
         print(f'energy: {energyResult}')
         print()
         
